@@ -39,7 +39,7 @@ import com.qualcomm.robotcore.util.Range;
 
 
 
-@Autonomous(name="Autonomous", group="Linear Opmode")  // @Autonomous(...) is the other common choice
+@Autonomous(name="Autonomous Side", group="Linear Opmode")  // @Autonomous(...) is the other common choice
 //@Disabled
 public class Auto extends LinearOpMode {
 
@@ -171,11 +171,17 @@ public class Auto extends LinearOpMode {
 
             telemetry.update();
 
-            if (autoProgress < 1.5) {
+            if (autoProgress < 2150) {
                 leftMotor1.setPower(1);
                 leftMotor2.setPower(1);
                 rightMotor1.setPower(1);
                 rightMotor2.setPower(1);
+            }
+            else {
+                leftMotor1.setPower(0);
+                leftMotor2.setPower(0);
+                rightMotor1.setPower(0);
+                rightMotor2.setPower(0);
             }
 
             idle(); // Always call idle() at the bottom of your while(opModeIsActive()) loop

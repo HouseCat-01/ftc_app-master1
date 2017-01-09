@@ -26,23 +26,19 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Color;
-
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.IrSeekerSensor;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.TouchSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 
 
-@TeleOp(name="TeleOp", group="Linear Opmode")  // @Autonomous(...) is the other common choice
+@Autonomous(name="Autonomous Side", group="Linear Opmode")  // @Autonomous(...) is the other common choice
 //@Disabled
-public class CompleteOpMode extends LinearOpMode {
+public class AutoBeacon extends LinearOpMode {
 
     /* Declare OpMode members. */
     private ElapsedTime runtime = new ElapsedTime();
@@ -70,8 +66,6 @@ public class CompleteOpMode extends LinearOpMode {
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-
-        IrSeekerSensor irSeeker;
 
         /* eg: Initialize the hardware variables. Note that the strings used here as parameters
          * to 'get' must correspond to the names assigned during the robot configuration
@@ -103,26 +97,28 @@ public class CompleteOpMode extends LinearOpMode {
         leftMotor2.setDirection(DcMotor.Direction.FORWARD); // Set to REVERSE if using AndyMark motors
         rightMotor1.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
         rightMotor2.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
-        liftMotor1.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
+        //liftMotor1.setDirection(DcMotor.Direction.REVERSE);// Set to FORWARD if using AndyMark motors
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
         //for joystick
-        double left;
-        double lefttotal;
-        double right;
-        double righttotal;
-        double backdiag;
-        double backdiagtotal;
-        double frontdiag;
-        double frontdiagtotal;
 
+        double irAngle;
+        double irStrength;
+        long startTime;
+        long time;
+        long autoProgress;
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
         runtime.reset();
-
+        startTime = System.currentTimeMillis();
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
             telemetry.addData("Status", "Run Time: " + runtime.toString());
+
+            time = System.currentTimeMillis();
+            autoProgress = time-startTime;
+
+            telemetry.addData("Autonomous Progress", autoProgress);
 
             telemetry.addData("rightMotor1", rightMotor1.getPower());
             telemetry.addData("rightMotor2", rightMotor2.getPower());
@@ -160,100 +156,25 @@ public class CompleteOpMode extends LinearOpMode {
             else
                 telemetry.addData("touchSensor", "Not Pressed");
 
+            if (irSeeker.signalDetected()) {
+                // Display angle and strength
+                telemetry.addData("Angle", irSeeker.getAngle());
+                telemetry.addData("Strength", irSeeker.getStrength());
+            }
+            else {
+                // Display loss of signal
+                telemetry.addData("Seeker", "Signal Lost");
+            }
+
             telemetry.update();
-            // drive system
-            left = -gamepad1.left_stick_y - gamepad1.left_stick_x;
-            left = Range.clip(left, -1, 1);
-            right = -gamepad1.left_stick_y + gamepad1.left_stick_x;
-            right = Range.clip(right, -1, 1);
 
-            lefttotal = left;
-            righttotal = right;
-
-            frontdiag = gamepad1.right_stick_x;
-            frontdiag = Range.clip(frontdiag, -1, 1);
-            backdiag = gamepad1.right_stick_x;
-            backdiag = Range.clip(backdiag, -1, 1);
-
-            frontdiagtotal = (frontdiag);
-            backdiagtotal = (backdiag);
-
-            //set joystick dead zones
-            if ((gamepad1.left_stick_x <= 0.05) && (gamepad1.left_stick_y <= 0.05) && (gamepad1.left_stick_x >= -0.05) && (gamepad1.left_stick_y >= -0.05) && (gamepad1.right_stick_x <= 0.03) && (gamepad1.right_stick_x >= -0.03)) {
-                leftMotor1.setPower(0);
-                leftMotor2.setPower(0);
+            if ((colorSensorL.red() > 2) || (colorSensorL.blue() > 2) || (colorSensorR.red() > 2) || (colorSensorR.blue() > 2)) {
                 rightMotor1.setPower(0);
                 rightMotor2.setPower(0);
-            }
-            else {
-                //set power of motors
-                leftMotor1.setPower(lefttotal - frontdiagtotal);
-                leftMotor2.setPower(lefttotal + backdiagtotal);
-                rightMotor1.setPower(righttotal + frontdiagtotal);
-                rightMotor2.setPower((righttotal - backdiagtotal));
+                leftMotor1.setPower(0);
+                leftMotor2.setPower(0);
             }
 
-            if (gamepad1.dpad_up) {
-                autoMod.setPosition(0);
-            }
-
-            if (gamepad1.dpad_down) {
-                autoMod.setPosition(1);
-            }
-
-            if (gamepad1.dpad_left) {
-                buttonPress.setPosition(0.95);
-            }
-            else if (gamepad1.dpad_right) {
-                buttonPress.setPosition(0.3);
-            }
-
-            if (gamepad1.right_trigger > 0.65) {
-                plateRelease.setPosition(1);
-                //wait(1000);
-                //plateRelease.setPosition(0.5);
-            }
-
-            if (!touchSensor.isPressed()) {
-                if (gamepad1.x) {
-                    catapultMotor.setPower(-1);
-                }
-                else {
-                    catapultMotor.setPower(0);
-                }
-            }
-             else if (touchSensor.isPressed()) {
-                if (gamepad1.right_bumper) {
-                    catapultMotor.setPower(-1);
-                    }
-                else {
-                    catapultMotor.setPower(0);
-                    }
-
-                if (gamepad1.b) {
-                    intakeMotor.setPower(1);
-                }
-                else {
-                    intakeMotor.setPower(0);
-                }
-             }
-            else {
-                catapultMotor.setPower(0);
-                intakeMotor.setPower(0);
-            }
-
-            if (gamepad1.a) {
-                liftMotor1.setPower(-1);
-                liftMotor2.setPower(1);
-            }
-            else if (gamepad1.y) {
-                liftMotor1.setPower(1);
-                liftMotor2.setPower(-1);
-            }
-            else {
-                liftMotor1.setPower(0);
-                liftMotor2.setPower(0);
-            }
 
             idle(); // Always call idle() at the bottom of your while(opModeIsActive()) loop
         }
